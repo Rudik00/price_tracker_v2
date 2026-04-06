@@ -12,13 +12,14 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 from database.create_db import init_db
 from .adding_products import adding_by_link_handler, add_user_url_handler
-from .show_product import show_products_by_id_or_url_handler
+from .show_product import _message_show_product, show_products_by_id_or_url_handler
 from .show_all_products import display_of_all_products_handler
 from .delete_product import deleting_product_by_id_or_url_handler
 
 
 class AddProductState(StatesGroup):
     waiting_url = State()
+    waiting_url_or_id = State()
 
 
 dp = Dispatcher(storage=MemoryStorage())
@@ -69,28 +70,30 @@ async def adding_by_link(message: Message, state: FSMContext):
     await state.set_state(AddProductState.waiting_url)
 
 
-# ловит сообщение с ссылкой на товар
-
-
+# ловит сообщение с ссылкой на товар и добавляет его в базу данных
 @dp.message(AddProductState.waiting_url)
 async def add_user_url(message: Message, state: FSMContext):
     await add_user_url_handler(message)
     await state.clear()
-
 
 # ________________________________________________________________________________________
 
 #                       показать товар по id или url
 
 @dp.message(Command("show_one_products"))
-async def show_one_products(message: Message):
-    await show_products_by_id_or_url_handler(message)
+async def show_one_products(message: Message, state: FSMContext):
+    await _message_show_product(message)
+    await state.set_state(AddProductState.waiting_url_or_id)
 
+# ловит сообщение с ссылкой или id товара и показывает его пользователю
+@dp.message(AddProductState.waiting_url_or_id)
+async def show_products_by_id_or_url(message: Message, state: FSMContext):
+    await show_products_by_id_or_url_handler(message)
+    await state.clear()
 
 # ________________________________________________________________________________________
 
 #                       показать все товары
-
 @dp.message(Command("show_all_products"))
 async def show_all_products(message: Message):
     await display_of_all_products_handler(message)
