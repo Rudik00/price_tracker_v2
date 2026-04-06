@@ -5,8 +5,8 @@ from playwright.async_api import async_playwright
 
 from database.add_or_update_price_db import add_or_update_product_price
 from task_queue.celery_app import celery_app
-from website.wildberries.browser import _fetch_html_with_browser
-from website.wildberries.parser import _parse_price_from_html
+from parser.wildberries.browser import _fetch_html_with_browser
+from parser.wildberries.parser import _parse_price_from_html
 
 
 logger = logging.getLogger(__name__)
