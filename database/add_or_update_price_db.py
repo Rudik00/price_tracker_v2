@@ -4,7 +4,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from .create_db import SessionLocal
 from sqlalchemy import select
 from datetime import datetime
-from .models_db import Product, User
+from database.models_db import Product, User
 
 
 logger = logging.getLogger(__name__)

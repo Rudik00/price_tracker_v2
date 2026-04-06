@@ -1,5 +1,5 @@
 from aiogram.types import Message
-from database.show_all_products import get_all_products_for_user
+from database.show_all_products_db import get_all_products_for_user
 
 
 async def display_of_all_products_handler(message: Message) -> None:

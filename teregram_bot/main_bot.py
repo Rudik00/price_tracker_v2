@@ -14,12 +14,13 @@ from database.create_db import init_db
 from .adding_products import adding_by_link_handler, add_user_url_handler
 from .show_product import _message_show_product, show_products_by_id_or_url_handler
 from .show_all_products import display_of_all_products_handler
-from .delete_product import deleting_product_by_id_or_url_handler
+from .delete_product import deleting_product_, deleting_product_id_or_url
 
 
 class AddProductState(StatesGroup):
     waiting_url = State()
     waiting_url_or_id = State()
+    waiting_delete_url_or_id = State()
 
 
 dp = Dispatcher(storage=MemoryStorage())
@@ -103,9 +104,17 @@ async def show_all_products(message: Message):
 
 #                       удалить товар по id или url
 
-@dp.message(Command("delete_product_by_id_or_url"))
-async def delete_product_by_id_or_url(message: Message):
-    await deleting_product_by_id_or_url_handler(message)
+@dp.message(Command("delete_product"))
+async def delete_product(message: Message, state: FSMContext):
+    await deleting_product_(message)
+    await state.set_state(AddProductState.waiting_delete_url_or_id)
+
+# ловит сообщение с ссылкой или id товара и удаляет его из базы данных
+@dp.message(AddProductState.waiting_delete_url_or_id)
+async def delete_product_by_id_or_url(message: Message, state: FSMContext):
+    await deleting_product_id_or_url(message)
+    await state.clear()
+
 
 
 if __name__ == "__main__":

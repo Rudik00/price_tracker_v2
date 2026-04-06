@@ -1,6 +1,6 @@
 from sqlalchemy import select, func
 
-from database.models import User
+from database.models_db import User
 from .create_db import SessionLocal
 
 

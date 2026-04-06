@@ -1,6 +1,6 @@
 from aiogram.types import Message
 
-from database.add_users import add_user_link
+from database.add_users_db import add_user_link
 from task_queue.tasks import parse_and_store_price
 
 

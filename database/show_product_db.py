@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from database.models import Product, User
+from database.models_db import Product, User
 from .create_db import SessionLocal
 
 

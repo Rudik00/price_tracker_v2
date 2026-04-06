@@ -1,5 +1,5 @@
 from aiogram.types import Message
-from database.show_product import get_product_by_id, get_product_by_url
+from database.show_product_db import get_product_by_id, get_product_by_url
 
 
 # вывод текста пользователю
@@ -30,7 +30,7 @@ async def show_products_by_id_or_url_handler(message: Message):
         else:
             await message.answer(product)
 
-    if isinstance(text, str):
+    else:
         # здесь проверяем валидность ссылки
         if "wildberries" in text.lower():
             product, _ = await get_product_by_url(
