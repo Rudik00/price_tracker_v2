@@ -73,6 +73,7 @@ async def add_or_update_product_price(
                 )
                 return existing
             # обновляем существующий продукт
+            flag = False
             existing.price_now = normalized_price
             if existing.price_start is None:
                 existing.price_start = normalized_price
@@ -81,6 +82,7 @@ async def add_or_update_product_price(
                 or normalized_price > existing.price_max
             ):
                 existing.price_max = normalized_price
+                flag = True
             if (
                 existing.price_min is None
                 or normalized_price < existing.price_min
@@ -98,4 +100,4 @@ async def add_or_update_product_price(
                 existing.price_min,
                 existing.price_max,
             )
-            return existing
+            return existing, flag

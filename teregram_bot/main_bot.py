@@ -11,8 +11,12 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from database.create_db import init_db
+from task_queue.background_price_updater import run_periodic_price_updates
 from .adding_products import adding_by_link_handler, add_user_url_handler
-from .show_product import _message_show_product, show_products_by_id_or_url_handler
+from .show_product import (
+    _message_show_product,
+    show_products_by_id_or_url_handler,
+)
 from .show_all_products import display_of_all_products_handler
 from .delete_product import deleting_product_, deleting_product_id_or_url
 
@@ -42,7 +46,13 @@ def get_token() -> str:
 async def main_tg_bot(token: str):
     await init_db()
     bot = Bot(token=token)
-    await dp.start_polling(bot)
+    background_task = asyncio.create_task(run_periodic_price_updates())
+    try:
+        await dp.start_polling(bot)
+    finally:
+        background_task.cancel()
+        await asyncio.gather(background_task, return_exceptions=True)
+        await bot.session.close()
 
 
 @dp.message(Command("start"))
@@ -81,12 +91,15 @@ async def add_user_url(message: Message, state: FSMContext):
 
 #                       показать товар по id или url
 
+
 @dp.message(Command("show_one_products"))
 async def show_one_products(message: Message, state: FSMContext):
     await _message_show_product(message)
     await state.set_state(AddProductState.waiting_url_or_id)
 
+
 # ловит сообщение с ссылкой или id товара и показывает его пользователю
+
 @dp.message(AddProductState.waiting_url_or_id)
 async def show_products_by_id_or_url(message: Message, state: FSMContext):
     await show_products_by_id_or_url_handler(message)
@@ -95,6 +108,8 @@ async def show_products_by_id_or_url(message: Message, state: FSMContext):
 # ________________________________________________________________________________________
 
 #                       показать все товары
+
+
 @dp.message(Command("show_all_products"))
 async def show_all_products(message: Message):
     await display_of_all_products_handler(message)
@@ -109,13 +124,13 @@ async def delete_product(message: Message, state: FSMContext):
     await deleting_product_(message)
     await state.set_state(AddProductState.waiting_delete_url_or_id)
 
+
 # ловит сообщение с ссылкой или id товара и удаляет его из базы данных
+
 @dp.message(AddProductState.waiting_delete_url_or_id)
 async def delete_product_by_id_or_url(message: Message, state: FSMContext):
     await deleting_product_id_or_url(message)
     await state.clear()
-
-
 
 if __name__ == "__main__":
     token = get_token()

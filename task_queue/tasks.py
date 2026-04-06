@@ -31,10 +31,18 @@ async def _parse_wb_price(url: str) -> float:
 async def _process_one_product(user_id: int, url: str) -> dict:
     logger.info("Process product started user_id=%s url=%s", user_id, url)
     price_now = await _parse_wb_price(url)
-    product = await add_or_update_product_price(
+    product, flag = await add_or_update_product_price(
         user_id=user_id,
         price_now=price_now,
     )
+    if flag:
+        await user_id.send_message(
+            chat_id=user_id,
+            text=(
+                f"Твой товар с id: {product.id_product} подешевел до {product.price_now} руб.\n"
+                f"{product.url}"
+            )
+        )
     logger.info(
         "Process product finished user_id=%s id_product=%s price_now=%s",
         user_id,
