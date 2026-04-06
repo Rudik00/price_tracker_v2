@@ -2,6 +2,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     ForeignKey,
+    Numeric,
     Integer,
     String,
     UniqueConstraint,
@@ -48,10 +49,10 @@ class Product(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    price_now = Column(Integer, nullable=True)
-    price_start = Column(Integer, nullable=True)
-    price_max = Column(Integer, nullable=True)
-    price_min = Column(Integer, nullable=True)
+    price_now = Column(Numeric(10, 2), nullable=True)
+    price_start = Column(Numeric(10, 2), nullable=True)
+    price_max = Column(Numeric(10, 2), nullable=True)
+    price_min = Column(Numeric(10, 2), nullable=True)
     time_added = Column(DateTime, server_default=func.now(), nullable=False)
 
     user = relationship("User", back_populates="product")

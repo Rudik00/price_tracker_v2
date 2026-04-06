@@ -1,0 +1,25 @@
+from sqlalchemy import select
+from database.models import Product, User
+from .create_db import SessionLocal
+
+
+async def get_all_products_for_user(user_id: str):
+    async with SessionLocal() as session:
+        result = await session.execute(
+            select(Product, User.url)
+            .join(User, User.id == Product.id_product)
+            .where(User.telegram_id == user_id)
+        )
+        rows = result.all()
+        
+        # Attach url to each Product object
+        products = []
+        if rows:
+            for product, url in rows:
+                product.url = url
+                products.append(product)
+        
+            return products
+        
+        else:
+            return "У вас пока нет добавленных товаров. Нажмите на команду /adding_by_link и добавьте товар по ссылке."

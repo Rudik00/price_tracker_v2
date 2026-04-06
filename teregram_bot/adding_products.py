@@ -1,6 +1,6 @@
 from aiogram.types import Message
 
-from database.create_db import add_user_link
+from database.add_users import add_user_link
 from task_queue.tasks import parse_and_store_price
 
 
@@ -54,9 +54,8 @@ async def add_user_url_handler(message: Message) -> None:
         )
 
         await message.answer(
-            "Теперь вы можете отслеживать цену на этот товар."
-            "\nДля этого нажмите на команду \n/show_one_products"
-            "\nИ введите ID или ссылку на товар."
+            "Совсем скоро товар добавиться в список отслеживаемых"
+            "\nПосле чего вы сможете использовать команду \n/show_one_products"
         )
 
     except ValueError as exc:

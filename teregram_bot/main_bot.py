@@ -1,5 +1,6 @@
 import os
 import asyncio
+import logging
 
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher
@@ -21,6 +22,11 @@ class AddProductState(StatesGroup):
 
 
 dp = Dispatcher(storage=MemoryStorage())
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
 
 
 def get_token() -> str:
@@ -53,17 +59,25 @@ async def info_handler(message: Message):
 #                         добавление товара по ссылке
 # ________________________________________________________________________________________
 
-# при вызове команды /adding_by_link бот попросит пользователя отправить ссылку на товар
+# при вызове команды /adding_by_link
+# бот попросит пользователя отправить ссылку на товар
+
+
 @dp.message(Command("adding_by_link"))
 async def adding_by_link(message: Message, state: FSMContext):
     await adding_by_link_handler(message)
     await state.set_state(AddProductState.waiting_url)
 
+
 # ловит сообщение с ссылкой на товар
+
+
 @dp.message(AddProductState.waiting_url)
 async def add_user_url(message: Message, state: FSMContext):
     await add_user_url_handler(message)
     await state.clear()
+
+
 # ________________________________________________________________________________________
 
 #                       показать товар по id или url
@@ -71,6 +85,8 @@ async def add_user_url(message: Message, state: FSMContext):
 @dp.message(Command("show_one_products"))
 async def show_one_products(message: Message):
     await show_products_by_id_or_url_handler(message)
+
+
 # ________________________________________________________________________________________
 
 #                       показать все товары
@@ -78,6 +94,8 @@ async def show_one_products(message: Message):
 @dp.message(Command("show_all_products"))
 async def show_all_products(message: Message):
     await display_of_all_products_handler(message)
+
+
 # ________________________________________________________________________________________
 
 #                       удалить товар по id или url
