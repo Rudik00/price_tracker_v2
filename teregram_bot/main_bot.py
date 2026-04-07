@@ -132,6 +132,7 @@ async def delete_product_by_id_or_url(message: Message, state: FSMContext):
     await deleting_product_id_or_url(message)
     await state.clear()
 
+
 if __name__ == "__main__":
     token = get_token()
     asyncio.run(main_tg_bot(token))

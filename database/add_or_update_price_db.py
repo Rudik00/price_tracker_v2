@@ -20,7 +20,7 @@ def _to_money(value: float | Decimal) -> Decimal:
 async def add_or_update_product_price(
     user_id: int,
     price_now: float | Decimal,
-) -> Product:
+) -> tuple[Product, bool, str, int]:
     """
     Создать или обновить строку товаров
     для заданного пользователя с указанным идентификатором.
@@ -71,9 +71,13 @@ async def add_or_update_product_price(
                     existing.id_product,
                     existing.price_now,
                 )
-                return existing
+                return existing, False, user.telegram_id, user.local_id
             # обновляем существующий продукт
-            flag = False
+            previous_price = existing.price_now
+            price_dropped = (
+                previous_price is not None
+                and normalized_price < previous_price
+            )
             existing.price_now = normalized_price
             if existing.price_start is None:
                 existing.price_start = normalized_price
@@ -82,7 +86,6 @@ async def add_or_update_product_price(
                 or normalized_price > existing.price_max
             ):
                 existing.price_max = normalized_price
-                flag = True
             if (
                 existing.price_min is None
                 or normalized_price < existing.price_min
@@ -100,4 +103,4 @@ async def add_or_update_product_price(
                 existing.price_min,
                 existing.price_max,
             )
-            return existing, flag
+            return existing, price_dropped, user.telegram_id, user.local_id

@@ -3,7 +3,7 @@ from database.show_all_products_db import get_all_products_for_user
 
 
 async def display_of_all_products_handler(message: Message) -> None:
-    # Здесь будет логика для отображения всех продуктов, добавленных пользователем.
+    # Показываем все товары, добавленные текущим пользователем.
     # получаем из базы данных все товары для данного пользователя
     products = await get_all_products_for_user(str(message.from_user.id))
 
@@ -11,7 +11,7 @@ async def display_of_all_products_handler(message: Message) -> None:
         await message.answer("Вот товары которые ты добавил:\n")
         for product in products:
             await message.answer(
-                f"ID: {product.id_product}\n"
+                f"ID: {product.local_id}\n"
                 f"Текущая цена: {product.price_now}\n"
                 f"Макс. цена: {product.price_max}\n"
                 f"Мин. цена: {product.price_min}\n"

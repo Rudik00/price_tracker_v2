@@ -7,7 +7,7 @@ from .create_db import SessionLocal
 async def add_user_link(
     telegram_id: str,
     user_url: str,
-) -> int:
+) -> tuple[int, int]:
     """
     Создайте новую строку пользователя и верните сгенерированный users.id.
 
@@ -22,8 +22,8 @@ async def add_user_link(
             existing = await session.scalar(existing_stmt)
             if existing is not None:
                 raise ValueError(
-                    "У вас уже есть такой товар\n" \
-                    f"Его ID для отслеживания = {existing.id}\n"
+                    "У вас уже есть такой товар\n"
+                    f"Его ID для отслеживания = {existing.local_id}\n"
                 )
 
             local_id_stmt = select(func.max(User.local_id)).where(
@@ -39,4 +39,4 @@ async def add_user_link(
             )
             session.add(user)
             await session.flush()  # get user.id before commit
-        return user.id
+        return user.id, user.local_id

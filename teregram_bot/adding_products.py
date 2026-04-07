@@ -39,17 +39,17 @@ async def add_user_url_handler(message: Message) -> None:
 
     # добавляем пользователя и товар в базу данных
     try:
-        created_id = await add_user_link(
+        created_id, local_id = await add_user_link(
             telegram_id=str(user_id),
             user_url=url,
         )
 
         # Фоновая задача: парсинг ссылки + обновление products.
-        task = parse_and_store_price.delay(created_id, url)
+        parse_and_store_price.delay(created_id, url)
 
         await message.answer(
             "Ваша ссылка добавлена."
-            f"\nID для отслеживания = {created_id}"
+            f"\nID для отслеживания = {local_id}"
             f"\nИли по ссылке url={url}"
         )
 
@@ -60,4 +60,4 @@ async def add_user_url_handler(message: Message) -> None:
 
     except ValueError as exc:
         await message.answer(str(exc))
-
+        return

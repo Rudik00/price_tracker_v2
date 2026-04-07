@@ -7,10 +7,9 @@ from database.create_db import SessionLocal
 from database.models_db import User
 from task_queue.tasks import parse_and_store_price
 
-
 logger = logging.getLogger(__name__)
 
-UPDATE_INTERVAL_SECONDS = 2 * 60  # * 60
+UPDATE_INTERVAL_SECONDS = 2 * 60 * 60
 
 
 async def enqueue_all_price_updates() -> None:
@@ -51,3 +50,4 @@ async def run_periodic_price_updates(
             logger.exception("Background price updater failed")
 
         await asyncio.sleep(interval_seconds)
+

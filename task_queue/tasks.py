@@ -8,6 +8,10 @@ from task_queue.celery_app import celery_app
 from parser.wildberries.browser import _fetch_html_with_browser
 from parser.wildberries.parser import _parse_price_from_html
 
+from dotenv import load_dotenv
+from aiogram import Bot
+import os
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,18 +35,21 @@ async def _parse_wb_price(url: str) -> float:
 async def _process_one_product(user_id: int, url: str) -> dict:
     logger.info("Process product started user_id=%s url=%s", user_id, url)
     price_now = await _parse_wb_price(url)
-    product, flag = await add_or_update_product_price(
-        user_id=user_id,
-        price_now=price_now,
-    )
-    if flag:
-        await user_id.send_message(
-            chat_id=user_id,
-            text=(
-                f"Твой товар с id: {product.id_product} подешевел до {product.price_now} руб.\n"
-                f"{product.url}"
-            )
+    product, price_dropped, telegram_id, local_id = (
+        await add_or_update_product_price(
+            user_id=user_id,
+            price_now=price_now,
         )
+    )
+
+    if price_dropped:
+        # Если цена снизилась, отправляем уведомление пользователю.
+        await show_message(
+            telegram_id=telegram_id,
+            url=url,
+            local_id=local_id,
+        )
+
     logger.info(
         "Process product finished user_id=%s id_product=%s price_now=%s",
         user_id,
@@ -52,10 +59,10 @@ async def _process_one_product(user_id: int, url: str) -> dict:
     return {
         "user_id": user_id,
         "id_product": product.id_product,
-        "price_now": product.price_now,
-        "price_start": product.price_start,
-        "price_max": product.price_max,
-        "price_min": product.price_min,
+        "price_now": str(product.price_now),
+        "price_start": str(product.price_start),
+        "price_max": str(product.price_max),
+        "price_min": str(product.price_min),
     }
 
 
@@ -75,4 +82,21 @@ def parse_and_store_price(self, user_id: int, url: str) -> dict:
         self.request.id,
         user_id,
     )
-    return asyncio.run(_process_one_product(user_id=user_id, url=url))
+    result = asyncio.run(_process_one_product(user_id=user_id, url=url))
+    return result
+
+
+async def show_message(telegram_id: str, url: str, local_id: int) -> None:
+    load_dotenv()  # читает .env
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    if not token:
+        raise ValueError("TELEGRAM_BOT_TOKEN не найден в .env")
+    bot = Bot(token=token)
+    await bot.send_message(
+        chat_id=telegram_id,
+        text=(
+            f"Твой товар c ID = {local_id} подешевел.\n"
+            f"{url}"
+        )
+    )
+    await bot.close()

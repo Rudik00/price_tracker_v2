@@ -15,12 +15,12 @@ async def show_products_by_id_or_url_handler(message: Message):
     text = message.text.strip()
 
     if text.isdigit():
-        text = int(text)
-        product, _ = await get_product_by_id(str(message.from_user.id), text)
+        local_id = int(text)
+        product, _ = await get_product_by_id(str(message.from_user.id), local_id)
 
         if _:
             await message.answer(
-                f"ID: {product.id_product}\n"
+                f"ID: {product.local_id}\n"
                 f"Текущая цена: {product.price_now}\n"
                 f"Макс. цена: {product.price_max}\n"
                 f"Мин. цена: {product.price_min}\n"
@@ -39,7 +39,7 @@ async def show_products_by_id_or_url_handler(message: Message):
 
             if _:
                 await message.answer(
-                    f"ID: {product.id_product}\n"
+                    f"ID: {product.local_id}\n"
                     f"Текущая цена: {product.price_now}\n"
                     f"Макс. цена: {product.price_max}\n"
                     f"Мин. цена: {product.price_min}\n"
