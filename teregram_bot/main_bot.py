@@ -3,8 +3,13 @@ import asyncio
 import logging
 
 from dotenv import load_dotenv
-from aiogram import Bot, Dispatcher
-from aiogram.types import Message
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    Message,
+    WebAppInfo,
+)
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -43,6 +48,11 @@ def get_token() -> str:
     return token
 
 
+def get_mini_app_url() -> str | None:
+    load_dotenv()
+    return os.getenv("MINI_APP_URL")
+
+
 async def main_tg_bot(token: str):
     await init_db()
     bot = Bot(token=token)
@@ -67,7 +77,6 @@ async def info_handler(message: Message):
         "Сейчас я могу следить за ценой на Wildberries.\n"
         "Скоро будет больше!💪"
     )
-
 #                         добавление товара по ссылке
 # ________________________________________________________________________________________
 
@@ -112,7 +121,28 @@ async def show_products_by_id_or_url(message: Message, state: FSMContext):
 
 @dp.message(Command("show_all_products"))
 async def show_all_products(message: Message):
-    await display_of_all_products_handler(message)
+    mini_app_url = get_mini_app_url()
+    use_mini_app = os.getenv("USE_MINI_APP", "true").lower() == "true"
+
+    if use_mini_app and mini_app_url:
+        keyboard = InlineKeyboardMarkup(
+            inline_keyboard=[
+                [
+                    InlineKeyboardButton(
+                        text="Открыть список товаров",
+                        web_app=WebAppInfo(url=mini_app_url),
+                    )
+                ]
+            ]
+        )
+        await message.answer(
+            "Открой мини-приложение, чтобы увидеть все товары.",
+            reply_markup=keyboard,
+        )
+        return
+
+    # # Fallback: старый текстовый вывод без мини-приложения.
+    # await display_of_all_products_handler(message)
 
 
 # ________________________________________________________________________________________
@@ -126,11 +156,34 @@ async def delete_product(message: Message, state: FSMContext):
 
 
 # ловит сообщение с ссылкой или id товара и удаляет его из базы данных
-
 @dp.message(AddProductState.waiting_delete_url_or_id)
 async def delete_product_by_id_or_url(message: Message, state: FSMContext):
     await deleting_product_id_or_url(message)
     await state.clear()
+
+# ________________________________________________________________________________________
+
+
+@dp.message(F.dice)
+async def play_vs_bot(message: Message):
+    user_value = message.dice.value
+
+    # бот кидает
+    bot_msg = await message.answer_dice()
+    bot_value = bot_msg.dice.value
+
+    if user_value > bot_value:
+        result = "Твоя победа! 😒"
+    elif user_value < bot_value:
+        result = "ХА 🫵 Я ПОБЕДИЛ! 😎"
+    else:
+        result = "Ничья 😐"
+
+    await message.answer(
+        f"Твой бросок: {user_value}\n"
+        f"Бот: {bot_value}\n\n"
+        f"{result}"
+    )
 
 
 if __name__ == "__main__":
