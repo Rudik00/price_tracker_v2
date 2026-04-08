@@ -12,9 +12,6 @@ def _parse_price_from_html(html: str) -> Optional[float]:
     """Извлечение цены из HTML с помощью BeautifulSoup."""
 
     soup = BeautifulSoup(html, "html.parser")
-    with open("page.html", "w", encoding="utf-8") as f:
-        f.write(soup.prettify())
-
     price_elem = soup.find(
             "span",
             class_="pdp_bj tsHeadline600Large"

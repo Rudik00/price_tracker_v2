@@ -18,7 +18,9 @@ price_tracker_v2/
 ├── app/                   # FastAPI (backend для Mini App)
 ├── database/              # SQLAlchemy модели и запросы
 ├── frontend/              # HTML/CSS/JS для Telegram Mini App
-├── parser/                # Парсер Wildberries
+├── parser/
+│   ├── wildberries/       # Парсер Wildberries
+│   └── ozon/              # Парсер Ozon (в разработке)
 ├── task_queue/            # Celery app и фоновые задачи
 ├── teregram_bot/          # Telegram бот (aiogram)
 ├── requirements.txt       # Список библиотек
@@ -173,7 +175,30 @@ python3 -m teregram_bot.main_bot
 4. Ошибка `Object of type Bot is not JSON serializable`
 - В Celery-задачи передавать только примитивы, не объекты `Bot`
 
+## Что хранится в базе данных
+
+Таблица `users`:
+- `telegram_id` — ID пользователя в Telegram
+- `local_id` — порядковый номер товара у этого пользователя (1, 2, 3...)
+- `url` — ссылка на товар
+
+Таблица `products`:
+- `price_now` / `price_start` / `price_max` / `price_min` — цены (NUMERIC 10,2)
+- `currency` — валюта (берётся с сайта при парсинге)
+- `img` — URL картинки товара
+
+> При удалении товара `local_id` остальных товаров автоматически пересчитывается.
+
+## Блокировка Ozon
+
+Ozon может показать страницу «Доступ ограничен» при парсинге.  
+Способы снизить риск:
+- Ставить редкий интервал обновления (30–120 мин)
+- Использовать прокси
+- Убедиться, что IP-адрес не датацентровый
+
 ## Ограничения
 
 - Сейчас поддерживается только Wildberries
 - Адрес ngrok временный и меняется при новом запуске
+- `img` заполняется только при первом парсинге; если элемент не найден — будет `null`
