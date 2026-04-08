@@ -7,39 +7,22 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
-WB_DANGER_CLASS = (
-    "mo-typography mo-typography_variant_title2 "
-    "mo-typography_variable-weight_title2 "
-    "mo-typography_variable mo-typography_color_danger "
-    "priceBlockFinalPrice--iToZR"
-)
-
-WB_PRIMARY_CLASS = (
-    "mo-typography mo-typography_variant_title2 "
-    "mo-typography_variable-weight_title2 "
-    "mo-typography_variable mo-typography_color_primary "
-    "priceBlockFinalPrice--iToZR"
-)
-
 
 def _parse_price_from_html(html: str) -> Optional[float]:
     """Извлечение цены из HTML с помощью BeautifulSoup."""
 
     soup = BeautifulSoup(html, "html.parser")
-    price_elem = (
-        soup.find(
-            "ins",
-            class_=WB_DANGER_CLASS,
-        )
-        or soup.find(
-            "ins",
-            class_=WB_PRIMARY_CLASS,
-        )
+    with open("page.html", "w", encoding="utf-8") as f:
+        f.write(soup.prettify())
+
+    price_elem = soup.find(
+            "span",
+            class_="pdp_bj tsHeadline600Large"
     )
-    logger.info("Raw WB price text extracted: %s", price_elem)
+    logger.info("Raw Ozon price text extracted: %s", price_elem)
 
     try:
-        img = soup.find("img", alt="Product image 1")["src"]
+        img = soup.find("img", elementtiming="lcp_eltiming_webGallery-3311626-default-1")["src"]
         logger.info("Parsed product image url: %s", img)
 
     except Exception:

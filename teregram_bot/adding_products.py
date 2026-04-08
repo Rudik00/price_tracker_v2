@@ -1,6 +1,6 @@
 from aiogram.types import Message
 
-from database.add_users_db import add_user_link
+from database.add_users_db import add_user_link 
 from task_queue.tasks import parse_and_store_price
 
 
@@ -10,6 +10,9 @@ async def adding_by_link_handler(message: Message):
         "Вы выбрали добавление продукта по ссылке. "
         "Пожалуйста, отправьте ссылку."
     )
+
+# _________________________________________________________________________________________
+                #WILDBERRIES
 
 
 # при ответе пользователя с ссылкой на товар
@@ -29,35 +32,35 @@ async def add_user_url_handler(message: Message) -> None:
         return
 
     # здесь проверяем валидность ссылки
-    if "wildberries" not in url.lower():
+    if "wildberries" in url.lower() or "ozon" in url.lower():
+        # добавляем пользователя и товар в базу данных
+        try:
+            created_id, local_id = await add_user_link(
+                telegram_id=str(user_id),
+                user_url=url,
+            )
+
+            # Фоновая задача: парсинг ссылки + обновление products.
+            parse_and_store_price.delay(created_id, url)
+
+            await message.answer(
+                "Ваша ссылка добавлена."
+                f"\nID для отслеживания = {local_id}"
+                f"\nИли по ссылке url={url}"
+            )
+
+            await message.answer(
+                "Совсем скоро товар добавиться в список отслеживаемых"
+                "\nПосле чего вы сможете использовать команду \n/show_one_products"
+            )
+
+        except ValueError as exc:
+            await message.answer(str(exc))
+            return
+    else:
         await message.answer(
             "Эта ссылка не подходит ни к одному сайту."
             "\nНажмите на команду /adding_by_link"
             "\nИ отправьте другую ссылку."
         )
-        return
-
-    # добавляем пользователя и товар в базу данных
-    try:
-        created_id, local_id = await add_user_link(
-            telegram_id=str(user_id),
-            user_url=url,
-        )
-
-        # Фоновая задача: парсинг ссылки + обновление products.
-        parse_and_store_price.delay(created_id, url)
-
-        await message.answer(
-            "Ваша ссылка добавлена."
-            f"\nID для отслеживания = {local_id}"
-            f"\nИли по ссылке url={url}"
-        )
-
-        await message.answer(
-            "Совсем скоро товар добавиться в список отслеживаемых"
-            "\nПосле чего вы сможете использовать команду \n/show_one_products"
-        )
-
-    except ValueError as exc:
-        await message.answer(str(exc))
         return

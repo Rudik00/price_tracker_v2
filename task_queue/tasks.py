@@ -3,9 +3,12 @@ import logging
 
 from database.add_or_update_price_db import add_or_update_product_price
 from task_queue.celery_app import celery_app
-from parser.wildberries.parser import _parse_price_from_html
 
-from parser.wildberries.browser import run
+from parser.wildberries.browser import run as run_wb
+from parser.wildberries.parser import _parse_price_from_html as parse_wb_price
+
+from parser.ozon.browser import run as run_ozon
+from parser.ozon.parser import _parse_price_from_html as parse_ozon_price
 
 from dotenv import load_dotenv
 from aiogram import Bot
@@ -15,22 +18,35 @@ import os
 logger = logging.getLogger(__name__)
 
 
-async def _parse_wb_price(url: str) -> tuple[float, str | None, str | None]:
-    logger.info("Start parsing WB price for url=%s", url)
-    # достаём HTML с помощью браузера
-    html = await run(url)
-    # парсим цену из HTML
-    price, currency, img = _parse_price_from_html(html)
-    if price is None:
-        logger.warning("Price not found in html for url=%s", url)
-        raise ValueError(f"Не удалось извлечь цену из {url}")
-    logger.info("Parsed WB price=%s %s for url=%s", price, currency, url)
-    return float(price), currency, img
+async def _parse_price(url: str) -> tuple[float, str | None, str | None]:
+    if "wildberries" in url.lower():
+        logger.info("Start parsing WB price for url=%s", url)
+        # достаём HTML с помощью браузера
+        html = await run_wb(url)
+        # парсим цену из HTML
+        price, currency, img = parse_wb_price(html)
+        if price is None:
+            logger.warning("Price not found in html for url=%s", url)
+            raise ValueError(f"Не удалось извлечь цену из {url}")
+        logger.info("Parsed WB price=%s %s for url=%s", price, currency, url)
+        return float(price), currency, img
+
+    elif "ozon" in url.lower():
+        logger.info("Start parsing Ozon price for url=%s", url)
+        # достаём HTML с помощью браузера
+        html = await run_ozon(url)
+        # парсим цену из HTML
+        price, currency, img = parse_ozon_price(html)
+        if price is None:
+            logger.warning("Price not found in html for url=%s", url)
+            raise ValueError(f"Не удалось извлечь цену из {url}")
+        logger.info("Parsed Ozon price=%s %s for url=%s", price, currency, url)
+        return float(price), currency, img
 
 
 async def _process_one_product(user_id: int, url: str) -> dict:
     logger.info("Process product started user_id=%s url=%s", user_id, url)
-    price_now, currency, img = await _parse_wb_price(url)
+    price_now, currency, img = await _parse_price(url)
     product, price_dropped, telegram_id, local_id, img = (
         await add_or_update_product_price(
             user_id=user_id,
