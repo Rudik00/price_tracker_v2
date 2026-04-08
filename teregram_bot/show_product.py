@@ -19,14 +19,18 @@ async def show_products_by_id_or_url_handler(message: Message):
         product, _ = await get_product_by_id(str(message.from_user.id), local_id)
 
         if _:
-            await message.answer(
-                f"ID: {product.local_id}\n"
-                f"Текущая цена: {product.price_now}\n"
-                f"Макс. цена: {product.price_max}\n"
-                f"Мин. цена: {product.price_min}\n"
-                f"Цена при добавлении: {product.price_start}\n"
-                f"{product.url}"
+            await message.answer_photo(
+                photo=product.img if product.img else None,
+                caption=(
+                    f"ID: {product.local_id}\n"
+                    f"Текущая цена: {product.price_now} {product.currency}\n"
+                    f"Макс. цена: {product.price_max} {product.currency}\n"
+                    f"Мин. цена: {product.price_min} {product.currency}\n"
+                    f"Цена при добавлении: {product.price_start} {product.currency}\n"
+                    f"{product.url}"
+                )
             )
+
         else:
             await message.answer(product)
 
@@ -38,14 +42,18 @@ async def show_products_by_id_or_url_handler(message: Message):
             )
 
             if _:
-                await message.answer(
-                    f"ID: {product.local_id}\n"
-                    f"Текущая цена: {product.price_now}\n"
-                    f"Макс. цена: {product.price_max}\n"
-                    f"Мин. цена: {product.price_min}\n"
-                    f"Цена при добавлении: {product.price_start}\n"
-                    f"{product.url}"
+                await message.answer_photo(
+                    photo=product.img if product.img else None,
+                    caption=(
+                        f"ID: {product.local_id}\n"
+                        f"Текущая цена: {product.price_now} {product.currency}\n"
+                        f"Макс. цена: {product.price_max} {product.currency}\n"
+                        f"Мин. цена: {product.price_min} {product.currency}\n"
+                        f"Цена при добавлении: {product.price_start} {product.currency}\n"
+                        f"{product.url}"
+                    )
                 )
+
             else:
                 await message.answer(product)
 

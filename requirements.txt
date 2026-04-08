@@ -1,0 +1,13 @@
+aiogram>=3.7.0
+asyncpg>=0.29.0
+beautifulsoup4>=4.12.3
+celery>=5.4.0
+fastapi>=0.111.0
+lxml>=5.2.2
+playwright>=1.45.0
+pydantic>=2.7.0
+python-dotenv>=1.0.1
+redis>=5.0.6
+rich>=13.7.1
+SQLAlchemy>=2.0.31
+uvicorn[standard]>=0.30.1

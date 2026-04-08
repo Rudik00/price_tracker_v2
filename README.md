@@ -1,129 +1,179 @@
 # Price Tracker v2
 
-Telegram-бот для отслеживания цен товаров (сейчас поддерживается Wildberries).
+Telegram-бот + API + Telegram Mini App для отслеживания цен на товары
+(сейчас поддерживается Wildberries).
 
-Проект умеет:
-- добавлять товар по ссылке;
-- хранить историю цены в PostgreSQL;
-- периодически обновлять цены в фоне через Celery;
-- отправлять уведомление в Telegram, если цена снизилась.
+## Возможности
 
-## Стек
-
-- Python 3.10+
-- aiogram 3
-- SQLAlchemy (async) + asyncpg
-- PostgreSQL
-- Celery + Redis
-- Playwright (парсинг с рендерингом JS)
-- BeautifulSoup4
+- Добавление товара по ссылке в боте
+- Хранение цен в PostgreSQL
+- Фоновое обновление цен через Celery + Redis
+- Уведомление в Telegram, если цена снизилась
+- Мини-приложение Telegram для красивого вывода всех товаров
 
 ## Структура проекта
 
 ```text
 price_tracker_v2/
-├── database/              # Модели и операции с БД
+├── app/                   # FastAPI (backend для Mini App)
+├── database/              # SQLAlchemy модели и запросы
+├── frontend/              # HTML/CSS/JS для Telegram Mini App
 ├── parser/                # Парсер Wildberries
-├── task_queue/            # Celery app, задачи и фоновый планировщик
-├── teregram_bot/          # Telegram-бот (handlers + FSM)
+├── task_queue/            # Celery app и фоновые задачи
+├── teregram_bot/          # Telegram бот (aiogram)
+├── requirements.txt       # Список библиотек
 └── README.md
 ```
 
-## Переменные окружения
+## Требования
 
-Создай файл `.env` в корне проекта:
+- macOS/Linux/WSL
+- Python 3.10+
+- PostgreSQL 14+
+- Redis 6+
+
+## Полная установка с нуля (если проект уже скачан)
+
+### 1. Перейти в папку проекта
+
+```bash
+cd /Users/ilarudyj78gmail.com/Программирование/price_tracker_v2
+```
+
+### 2. Создать и активировать виртуальное окружение
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install --upgrade pip
+```
+
+### 3. Установить Python-зависимости
+
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Установить браузер для Playwright
+
+```bash
+playwright install chromium
+```
+
+### 5. Поднять PostgreSQL и Redis
+
+Вариант A (локально через Homebrew):
+
+```bash
+brew install postgresql@16 redis
+brew services start postgresql@16
+brew services start redis
+```
+
+Вариант B (Docker, если удобно):
+
+```bash
+docker run -d --name pt-postgres -e POSTGRES_PASSWORD=54321 -e POSTGRES_USER=price_tracker_user -e POSTGRES_DB=price_tracker_db -p 5432:5432 postgres:16
+docker run -d --name pt-redis -p 6379:6379 redis:7
+```
+
+### 6. Создать файл .env
+
+Создай `.env` в корне проекта со значениями:
 
 ```env
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 DATABASE_URL=postgresql+asyncpg://price_tracker_user:54321@localhost:5432/price_tracker_db
 REDIS_URL=redis://localhost:6379/0
+
+# Для Mini App
+USE_MINI_APP=true
+MINI_APP_URL=https://your-public-url
 ```
 
-## Установка
+## Как запускать весь проект
 
-1. Создай и активируй виртуальное окружение:
+Нужно 4 терминала.
+
+### Терминал 1: FastAPI (API + frontend)
 
 ```bash
-python3 -m venv venv
 source venv/bin/activate
+uvicorn app.api:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-2. Установи зависимости:
+### Терминал 2: ngrok (для публичного HTTPS URL)
 
 ```bash
-pip install aiogram celery redis sqlalchemy asyncpg python-dotenv playwright beautifulsoup4 lxml
-playwright install chromium
+ngrok http 8000
 ```
 
-3. Подними PostgreSQL и Redis (локально или в Docker).
+Скопируй значение из строки вида:
 
-## Подготовка БД
+```text
+Forwarding https://xxxxx.ngrok-free.app -> http://localhost:8000
+```
 
-Таблицы создаются автоматически при старте бота через `init_db()`.
+Это и есть `MINI_APP_URL` в `.env`.
 
-Важно:
-- в таблице `products` цены хранятся как `NUMERIC(10,2)`;
-- `products.id_product` связан с `users.id`.
+После изменения `.env` перезапусти бот.
 
-## Запуск
-
-Запускать нужно в двух терминалах.
-
-Терминал 1: Celery worker
+### Терминал 3: Celery worker
 
 ```bash
+source venv/bin/activate
 celery -A task_queue.celery_app worker --loglevel=info
 ```
 
-Терминал 2: Telegram-бот
+### Терминал 4: Telegram бот
 
 ```bash
+source venv/bin/activate
 python3 -m teregram_bot.main_bot
 ```
 
-После старта бота запускается фоновый цикл обновления цен:
-- файл: `task_queue/background_price_updater.py`;
-- текущий интервал в коде: `2 * 60` секунд (режим теста);
-- для 2 часов поставь `2 * 60 * 60`.
+## Что происходит при запуске
+
+- Бот на старте вызывает `init_db()` и создает таблицы при необходимости
+- Celery worker обрабатывает задачи парсинга
+- Фоновый цикл ставит задачи обновления цен по товарам
+- Команда `/show_all_products` отправляет кнопку открытия Mini App
+- Mini App берет `initData` из Telegram, API валидирует подпись и возвращает товары этого пользователя
 
 ## Команды бота
 
 - `/start` — приветствие
 - `/info` — информация о боте
 - `/adding_by_link` — добавить товар по ссылке
-- `/show_one_products` — показать товар по ID или URL
-- `/show_all_products` — показать все отслеживаемые товары
-- `/delete_product` — удалить товар по ID или URL
+- `/show_one_products` — показать товар по local_id или URL
+- `/show_all_products` — открыть Mini App со всеми товарами
+- `/delete_product` — удалить товар по local_id или URL
 
-## Как работает уведомление о снижении цены
+## Проверка после установки
 
-1. Планировщик ставит задачи в Celery для всех ссылок.
-2. Задача парсит текущую цену.
-3. Цена сравнивается с предыдущей в БД.
-4. Если новая цена ниже предыдущей, бот отправляет сообщение пользователю.
+1. В Telegram отправить `/adding_by_link` и добавить товар Wildberries
+2. Проверить, что товар появился по `/show_one_products`
+3. Отправить `/show_all_products`
+4. Нажать кнопку Mini App и убедиться, что список загрузился
 
 ## Частые проблемы
 
-1. Ошибка `Object of type Bot is not JSON serializable`
+1. Бот не отвечает на `/show_all_products`
+- Проверь, что в `.env` заполнен `MINI_APP_URL`
+- Проверь, что `USE_MINI_APP=true`
+- Перезапусти бот после изменения `.env`
 
-Причина: передача объекта Bot в аргументах Celery-задачи.
+2. Mini App не открывается
+- Проверь, что ngrok запущен
+- Проверь, что `MINI_APP_URL` начинается с `https://`
 
-Решение: передавать в задачу только примитивы (`int`, `str`, `dict`, `list`),
-а `Bot(...)` создавать внутри worker-процесса.
+3. API отдает 401 для Mini App
+- Это обычно невалидный `initData` (открытие страницы вне Telegram)
 
-2. Не отправляются уведомления
+4. Ошибка `Object of type Bot is not JSON serializable`
+- В Celery-задачи передавать только примитивы, не объекты `Bot`
 
-Проверь:
-- что `TELEGRAM_BOT_TOKEN` корректный;
-- что запущен Celery worker;
-- что в `chat_id` используется `telegram_id`, а не внутренний id из таблицы;
-- что цена действительно снизилась.
+## Ограничения
 
-3. Парсер не находит цену
-
-Иногда Wildberries меняет верстку. В этом случае нужно обновить селекторы
-в `parser/wildberries/parser.py`.
-
-## Текущее ограничение
-
-Сейчас поддерживается только Wildberries.
+- Сейчас поддерживается только Wildberries
+- Адрес ngrok временный и меняется при новом запуске

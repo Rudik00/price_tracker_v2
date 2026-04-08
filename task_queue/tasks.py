@@ -1,12 +1,11 @@
 import asyncio
 import logging
 
-from playwright.async_api import async_playwright
-
 from database.add_or_update_price_db import add_or_update_product_price
 from task_queue.celery_app import celery_app
-from parser.wildberries.browser import _fetch_html_with_browser
 from parser.wildberries.parser import _parse_price_from_html
+
+from parser.wildberries.browser_2 import run
 
 from dotenv import load_dotenv
 from aiogram import Bot
@@ -16,29 +15,28 @@ import os
 logger = logging.getLogger(__name__)
 
 
-async def _parse_wb_price(url: str) -> float:
+async def _parse_wb_price(url: str) -> tuple[float, str | None, str | None]:
     logger.info("Start parsing WB price for url=%s", url)
-    async with async_playwright() as pw:
-        browser = await pw.chromium.launch(headless=True)
-        try:
-            html = await _fetch_html_with_browser(browser, url)
-            price = _parse_price_from_html(html)
-            if price is None:
-                logger.warning("Price not found in html for url=%s", url)
-                raise ValueError(f"Не удалось извлечь цену из {url}")
-            logger.info("Parsed WB price=%s for url=%s", price, url)
-            return float(price)
-        finally:
-            await browser.close()
+    # достаём HTML с помощью браузера
+    html = await run(url)
+    # парсим цену из HTML
+    price, currency, img = _parse_price_from_html(html)
+    if price is None:
+        logger.warning("Price not found in html for url=%s", url)
+        raise ValueError(f"Не удалось извлечь цену из {url}")
+    logger.info("Parsed WB price=%s %s for url=%s", price, currency, url)
+    return float(price), currency, img
 
 
 async def _process_one_product(user_id: int, url: str) -> dict:
     logger.info("Process product started user_id=%s url=%s", user_id, url)
-    price_now = await _parse_wb_price(url)
-    product, price_dropped, telegram_id, local_id = (
+    price_now, currency, img = await _parse_wb_price(url)
+    product, price_dropped, telegram_id, local_id, img = (
         await add_or_update_product_price(
             user_id=user_id,
             price_now=price_now,
+            currency=currency,
+            img=img
         )
     )
 
@@ -48,6 +46,7 @@ async def _process_one_product(user_id: int, url: str) -> dict:
             telegram_id=telegram_id,
             url=url,
             local_id=local_id,
+            img=img
         )
 
     logger.info(
@@ -63,6 +62,7 @@ async def _process_one_product(user_id: int, url: str) -> dict:
         "price_start": str(product.price_start),
         "price_max": str(product.price_max),
         "price_min": str(product.price_min),
+        "currency": currency,
     }
 
 
@@ -86,7 +86,7 @@ def parse_and_store_price(self, user_id: int, url: str) -> dict:
     return result
 
 
-async def show_message(telegram_id: str, url: str, local_id: int) -> None:
+async def show_message(telegram_id: str, url: str, local_id: int, img: str | None) -> None:
     load_dotenv()  # читает .env
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token:
@@ -95,6 +95,7 @@ async def show_message(telegram_id: str, url: str, local_id: int) -> None:
     await bot.send_message(
         chat_id=telegram_id,
         text=(
+            f"{img}\n"
             f"Твой товар c ID = {local_id} подешевел.\n"
             f"{url}"
         )

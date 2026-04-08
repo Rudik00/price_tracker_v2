@@ -8,6 +8,30 @@ from .create_db import SessionLocal
 logger = logging.getLogger(__name__)
 
 
+async def _renumber_local_ids(session, telegram_id: str) -> None:
+    """Reassign local_id sequentially (1, 2, 3...) for a user's remaining rows.
+
+    Called inside an already-open transaction.
+    """
+    stmt = (
+        select(User)
+        .where(User.telegram_id == telegram_id)
+        .order_by(User.local_id)
+    )
+    result = await session.execute(stmt)
+    remaining = result.scalars().all()
+
+    for new_id, row in enumerate(remaining, start=1):
+        if row.local_id != new_id:
+            row.local_id = new_id
+
+    logger.info(
+        "Renumbered local_ids for telegram_id=%s count=%s",
+        telegram_id,
+        len(remaining),
+    )
+
+
 async def deleting_product_by_id(
     user_id: str,
     product_id: int,
@@ -49,6 +73,10 @@ async def deleting_product_by_id(
 
             # 3. Удалить из users
             await session.delete(user)
+            await session.flush()
+
+            # 4. Перенумеровать local_id у оставшихся товаров
+            await _renumber_local_ids(session, user_id)
 
             logger.info(
                 "Deleted telegram_id=%s local_id=%s users.id=%s",
@@ -100,6 +128,10 @@ async def deleting_product_by_url(
 
             # 3. Удалить из users
             await session.delete(user)
+            await session.flush()
+
+            # 4. Перенумеровать local_id у оставшихся товаров
+            await _renumber_local_ids(session, user_id)
 
             logger.info(
                 "Deleted telegram_id=%s url=%s users.id=%s",

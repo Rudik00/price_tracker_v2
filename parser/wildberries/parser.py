@@ -37,6 +37,14 @@ def _parse_price_from_html(html: str) -> Optional[float]:
         )
     )
 
+    try:
+        img = soup.find("img", alt="Product image 1")["src"]
+        logger.info("Parsed product image url: %s", img)
+
+    except Exception:
+        logger.warning("Product image not found in html")
+        img = None
+
     if not price_elem:
         logger.warning("priceBlockFinalPrice element not found")
         return None
@@ -47,5 +55,6 @@ def _parse_price_from_html(html: str) -> Optional[float]:
     price = round(float(
         re.sub(r"[^\d,\.]", "", price_text).replace(",", ".")
     ), 2)
-    logger.info("Parsed WB price float: %s", price)
-    return price
+    currency = re.sub(r"[\d,.\s]", "", price_text)
+    logger.info("Parsed WB price float1: %s %s", price, currency)
+    return price, currency, img

@@ -40,6 +40,8 @@ class InitDataPayload(BaseModel):
 class ProductOut(BaseModel):
     local_id: int
     url: str
+    currency: str | None
+    img: str | None
     price_now: str | None
     price_start: str | None
     price_max: str | None
@@ -138,6 +140,8 @@ async def get_products(payload: InitDataPayload) -> ProductsResponse:
             select(
                 User.local_id,
                 User.url,
+                Product.currency,
+                Product.img,
                 Product.price_now,
                 Product.price_start,
                 Product.price_max,
@@ -155,6 +159,8 @@ async def get_products(payload: InitDataPayload) -> ProductsResponse:
         ProductOut(
             local_id=local_id,
             url=url,
+            currency=currency,
+            img=img,
             price_now=_decimal_to_str(price_now),
             price_start=_decimal_to_str(price_start),
             price_max=_decimal_to_str(price_max),
@@ -164,6 +170,8 @@ async def get_products(payload: InitDataPayload) -> ProductsResponse:
         for (
             local_id,
             url,
+            currency,
+            img,
             price_now,
             price_start,
             price_max,

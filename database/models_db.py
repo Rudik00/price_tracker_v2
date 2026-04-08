@@ -53,6 +53,8 @@ class Product(Base):
     price_start = Column(Numeric(10, 2), nullable=True)
     price_max = Column(Numeric(10, 2), nullable=True)
     price_min = Column(Numeric(10, 2), nullable=True)
+    currency = Column(String, nullable=True)
+    img = Column(String, nullable=True)
     time_added = Column(DateTime, server_default=func.now(), nullable=False)
 
     user = relationship("User", back_populates="product")

@@ -127,6 +127,23 @@ h1 {
   animation: rise 0.35s ease-out;
 }
 
+.product-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.product-image-empty {
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
 .card h3 {
   margin: 0 0 8px;
   font-family: "Space Grotesk", sans-serif;

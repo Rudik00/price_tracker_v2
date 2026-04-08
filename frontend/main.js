@@ -13,11 +13,12 @@ function setState(text) {
   stateEl.textContent = text;
 }
 
-function toPrice(value) {
+function toPrice(value, currency) {
   if (value === null || value === undefined) {
     return "-";
   }
-  return `${value} ₽`;
+  const cur = currency || "";
+  return `${value} ${cur}`.trim();
 }
 
 function renderProducts(products) {
@@ -33,12 +34,16 @@ function renderProducts(products) {
   for (const item of products) {
     const card = document.createElement("article");
     card.className = "card";
+    const imageBlock = item.img
+      ? `<img class="product-image" src="${item.img}" alt="Товар ID ${item.local_id}" loading="lazy" />`
+      : `<div class="product-image product-image-empty">Нет фото</div>`;
     card.innerHTML = `
+      ${imageBlock}
       <h3>ID ${item.local_id}</h3>
-      <div class="row"><span class="label">Текущая</span><span class="value">${toPrice(item.price_now)}</span></div>
-      <div class="row"><span class="label">Старт</span><span class="value">${toPrice(item.price_start)}</span></div>
-      <div class="row"><span class="label">Максимум</span><span class="value">${toPrice(item.price_max)}</span></div>
-      <div class="row"><span class="label">Минимум</span><span class="value">${toPrice(item.price_min)}</span></div>
+      <div class="row"><span class="label">Текущая</span><span class="value">${toPrice(item.price_now, item.currency)}</span></div>
+      <div class="row"><span class="label">Старт</span><span class="value">${toPrice(item.price_start, item.currency)}</span></div>
+      <div class="row"><span class="label">Максимум</span><span class="value">${toPrice(item.price_max, item.currency)}</span></div>
+      <div class="row"><span class="label">Минимум</span><span class="value">${toPrice(item.price_min, item.currency)}</span></div>
       <a class="url" href="${item.url}" target="_blank" rel="noopener noreferrer">${item.url}</a>
     `;
     gridEl.appendChild(card);
