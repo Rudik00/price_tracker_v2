@@ -5,7 +5,7 @@ from database.add_or_update_price_db import add_or_update_product_price
 from task_queue.celery_app import celery_app
 from parser.wildberries.parser import _parse_price_from_html
 
-from parser.wildberries.browser_2 import run
+from parser.wildberries.browser import run
 
 from dotenv import load_dotenv
 from aiogram import Bot

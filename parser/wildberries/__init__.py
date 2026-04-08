@@ -1,3 +1,3 @@
 """Wildberries scraping package."""
 from . import parser
-from . import browser_2
+from . import browser
